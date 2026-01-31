@@ -12,6 +12,7 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/home/vscode/.local/bin:$PATH"
 
 # Installation: Claude Code + outils d'analyse et debug
 RUN apt-get update && apt-get install -y --no-install-recommends \
