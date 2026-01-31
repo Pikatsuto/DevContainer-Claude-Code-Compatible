@@ -125,6 +125,7 @@ Rebuild only occurs if changes are detected. All templates are built in parallel
 | Package     | Description             |
 | ----------- | ----------------------- |
 | Claude Code | Anthropic CLI           |
+| gh          | GitHub CLI              |
 | git         | Version control         |
 | ripgrep     | Fast search             |
 | fd-find     | File finder             |
