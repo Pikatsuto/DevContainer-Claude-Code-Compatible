@@ -1,6 +1,6 @@
 {
   "name": "Claude Code Dev Container",
-  "image": "ghcr.io/Pikatsuto/devcontainer-claude-code:latest",
+  "image": "ghcr.io/pikatsuto/devcontainer-claude-code:latest",
 
   // Montage du contexte Claude Code de l'hôte pour réutiliser l'authentification
   "mounts": [
