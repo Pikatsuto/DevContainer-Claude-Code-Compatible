@@ -125,6 +125,8 @@ Rebuild only occurs if changes are detected. All templates are built in parallel
 | Package     | Description             |
 | ----------- | ----------------------- |
 | Claude Code | Anthropic CLI           |
+| zsh         | Shell with fish-like UX |
+| starship    | Modern prompt           |
 | gh          | GitHub CLI              |
 | git         | Version control         |
 | ripgrep     | Fast search             |
@@ -133,6 +135,13 @@ Rebuild only occurs if changes are detected. All templates are built in parallel
 | tree        | Directory visualization |
 | procps      | Process tools (ps, top) |
 | lsof        | File/network debugging  |
+
+Zsh is configured with:
+- **Autosuggestions**: history-based suggestions
+- **Syntax highlighting**: command colorization
+- **Starship prompt**: modern prompt with git status
+- **Advanced completion**: Tab navigation, case-insensitive
+- **Fish-like keybindings**: Ctrl+Space to accept, arrows for history search
 
 ### Base with BMAD
 
