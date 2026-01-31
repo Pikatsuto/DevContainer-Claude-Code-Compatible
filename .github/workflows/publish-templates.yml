@@ -1,0 +1,56 @@
+name: Publish Dev Container Templates
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/**/devcontainer-template.json'
+      - '.github/workflows/publish-templates.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish templates
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+
+          # Find and publish all templates
+          for template_dir in .devcontainer/*/; do
+            if [[ -f "${template_dir}devcontainer-template.json" ]]; then
+              template_name=$(basename "$template_dir")
+              echo "Publishing template: $template_name"
+
+              devcontainer templates publish "$template_dir" \
+                --registry "${{ env.REGISTRY }}" \
+                --namespace "$OWNER_LC"
+            fi
+          done

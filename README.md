@@ -20,7 +20,15 @@ Dev Container templates with Claude Code pre-installed on Debian 13 (Trixie).
 
 ## Usage
 
-### Option 1: Copy the devcontainer folder
+### Option 1: Use from VS Code (recommended)
+
+1. Open any folder in VS Code
+2. Press `F1` → "Dev Containers: Add Dev Container Configuration Files..."
+3. Select "Show All Definitions..."
+4. Search for `ghcr.io/pikatsuto/claude-code`
+5. Choose your template (base or base-with-bmad)
+
+### Option 2: Copy the devcontainer folder
 
 Copy the desired template folder from `.devcontainer/` to your project:
 
@@ -32,7 +40,7 @@ cp -r .devcontainer/base /your-project/.devcontainer
 cp -r .devcontainer/base-with-bmad /your-project/.devcontainer
 ```
 
-### Option 2: Use the image directly
+### Option 3: Use the image directly
 
 Create a `.devcontainer/devcontainer.json` in your project:
 
@@ -48,7 +56,7 @@ Create a `.devcontainer/devcontainer.json` in your project:
 }
 ```
 
-### Option 3: Extend the image
+### Option 4: Extend the image
 
 Create your own Dockerfile based on this image:
 
@@ -104,7 +112,8 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 │       └── devcontainer-template.json
 ├── .github/
 │   └── workflows/
-│       └── build-container.yml
+│       ├── build-container.yml
+│       └── publish-templates.yml
 ├── devcontainer-collection.json
 └── README.md
 ```
