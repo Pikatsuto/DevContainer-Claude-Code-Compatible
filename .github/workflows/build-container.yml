@@ -1,0 +1,174 @@
+name: Build and Push Dev Container
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/build-container.yml'
+  schedule:
+    # Toutes les 24h à 2h du matin UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/devcontainer-claude-code
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      claude_version: ${{ steps.versions.outputs.claude_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current versions
+        id: versions
+        run: |
+          # Récupérer la dernière version de Claude Code
+          CLAUDE_VERSION=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "unknown")
+          echo "claude_version=$CLAUDE_VERSION" >> $GITHUB_OUTPUT
+          echo "Claude Code version: $CLAUDE_VERSION"
+
+      - name: Check if rebuild is needed
+        id: check
+        run: |
+          # Pour les push, toujours rebuild
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Push event - will rebuild"
+            exit 0
+          fi
+
+          # Pour les workflow_dispatch, toujours rebuild
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger - will rebuild"
+            exit 0
+          fi
+
+          # Pour le cron, vérifier si l'image existe et comparer les versions
+          echo "Checking existing image..."
+
+          # Tenter de récupérer les labels de l'image existante
+          TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
+
+          MANIFEST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://ghcr.io/v2/${{ env.IMAGE_NAME }}/manifests/latest" 2>/dev/null || echo "")
+
+          if [[ -z "$MANIFEST" || "$MANIFEST" == *"error"* ]]; then
+            echo "No existing image found - will build"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Récupérer la version de Claude Code dans l'image existante via le cache
+          CACHE_FILE=".claude-version-cache"
+          CURRENT_CLAUDE_VERSION="${{ steps.versions.outputs.claude_version }}"
+
+          # Utiliser le cache GitHub pour stocker la dernière version buildée
+          if [[ -f "$CACHE_FILE" ]]; then
+            CACHED_VERSION=$(cat "$CACHE_FILE")
+            if [[ "$CACHED_VERSION" != "$CURRENT_CLAUDE_VERSION" ]]; then
+              echo "Claude Code version changed: $CACHED_VERSION -> $CURRENT_CLAUDE_VERSION"
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          # Vérifier le hash du Dockerfile
+          DOCKERFILE_HASH=$(sha256sum .devcontainer/Dockerfile | cut -d' ' -f1)
+          CACHE_DOCKERFILE=".dockerfile-hash-cache"
+
+          if [[ -f "$CACHE_DOCKERFILE" ]]; then
+            CACHED_HASH=$(cat "$CACHE_DOCKERFILE")
+            if [[ "$CACHED_HASH" != "$DOCKERFILE_HASH" ]]; then
+              echo "Dockerfile changed"
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          else
+            echo "No cache found - will build"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "No changes detected - skipping build"
+          echo "should_build=false" >> $GITHUB_OUTPUT
+
+      - name: Cache version info
+        if: steps.check.outputs.should_build == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .claude-version-cache
+            .dockerfile-hash-cache
+          key: build-cache-${{ github.run_id }}
+          restore-keys: |
+            build-cache-
+
+  build-and-push:
+    needs: check-updates
+    if: needs.check-updates.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value={{date 'YYYYMMDD'}}
+            type=sha,prefix=
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .devcontainer
+          file: .devcontainer/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.claude-code-version=${{ needs.check-updates.outputs.claude_version }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update version cache
+        run: |
+          echo "${{ needs.check-updates.outputs.claude_version }}" > .claude-version-cache
+          sha256sum .devcontainer/Dockerfile | cut -d' ' -f1 > .dockerfile-hash-cache
+
+      - name: Save cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .claude-version-cache
+            .dockerfile-hash-cache
+          key: build-cache-${{ github.run_id }}

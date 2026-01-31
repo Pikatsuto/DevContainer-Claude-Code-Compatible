@@ -1,0 +1,43 @@
+{
+  "name": "Claude Code Dev Container",
+  "image": "ghcr.io/Pikatsuto/devcontainer-claude-code:latest",
+
+  // Montage du contexte Claude Code de l'hôte pour réutiliser l'authentification
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+  ],
+
+  // Configuration de l'utilisateur
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+
+  // Variables d'environnement
+  "remoteEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+
+  // Extensions VSCode recommandées
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropics.claude-code"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Commande post-création pour vérifier l'installation
+  "postCreateCommand": "claude --version || true",
+
+  // Options du container
+  "features": {},
+
+  // Capacités additionnelles si nécessaire
+  "capAdd": [],
+
+  // Monter le workspace
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+}
