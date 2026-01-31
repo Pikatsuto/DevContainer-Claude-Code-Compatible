@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '.devcontainer/**/devcontainer-template.json'
+      - '.devcontainer/**/devcontainer.json'
       - '.github/workflows/publish-templates.yml'
   workflow_dispatch:
 
@@ -43,14 +44,7 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
 
-          # Find and publish all templates
-          for template_dir in .devcontainer/*/; do
-            if [[ -f "${template_dir}devcontainer-template.json" ]]; then
-              template_name=$(basename "$template_dir")
-              echo "Publishing template: $template_name"
-
-              devcontainer templates publish "$template_dir" \
-                --registry "${{ env.REGISTRY }}" \
-                --namespace "$OWNER_LC"
-            fi
-          done
+          # Publish all templates from .devcontainer folder
+          devcontainer templates publish .devcontainer \
+            --registry "${{ env.REGISTRY }}" \
+            --namespace "$OWNER_LC"
