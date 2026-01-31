@@ -1,5 +1,5 @@
 {
-  "id": "claude-code-bmad",
+  "id": "base-with-bmad",
   "version": "1.0.0",
   "name": "Claude Code + BMAD-METHOD",
   "description": "Dev Container with Claude Code, Node.js 24 and BMAD-METHOD pre-installed on Debian 13 (Trixie)",

@@ -1,5 +1,5 @@
 {
-  "id": "claude-code-base",
+  "id": "base",
   "version": "1.0.0",
   "name": "Claude Code",
   "description": "Dev Container with Claude Code pre-installed on Debian 13 (Trixie)",
