@@ -1,0 +1,44 @@
+{
+  "name": "Claude Code + BMAD-METHOD Dev Container",
+  "image": "ghcr.io/pikatsuto/devcontainer-claude-code-bmad:latest",
+
+  // Montage des configurations de l'hôte
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+  ],
+
+  // Configuration de l'utilisateur
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+
+  // Variables d'environnement
+  "remoteEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+
+  // Extensions VSCode recommandées
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Installation de BMAD-METHOD après création
+  "postCreateCommand": "claude --version && npx bmad-method install",
+
+  // Options du container
+  "features": {},
+
+  // Capacités additionnelles si nécessaire
+  "capAdd": [],
+
+  // Monter le workspace
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+}

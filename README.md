@@ -1,29 +1,54 @@
 # DevContainer Claude Code Compatible
 
-Dev Container template with Claude Code pre-installed on Debian 13 (Trixie).
+Dev Container templates with Claude Code pre-installed on Debian 13 (Trixie).
+
+## Available Templates
+
+| Template | Image | Description |
+|----------|-------|-------------|
+| **base** | `ghcr.io/pikatsuto/devcontainer-claude-code:latest` | Claude Code only |
+| **base-with-bmad** | `ghcr.io/pikatsuto/devcontainer-claude-code-bmad:latest` | Claude Code + Node.js + BMAD-METHOD |
 
 ## Features
 
 - **Debian 13 (Trixie) base**: Lightweight and up-to-date image
 - **Claude Code pre-installed**: Ready to use out of the box
-- **Shared authentication**: Reuses your host's Claude Code credentials
+- **Shared authentication**: Reuses your host's Claude Code and SSH credentials
 - **Analysis tools included**: ripgrep, fd, jq, tree, etc.
 - **Multi-architecture**: Supports amd64 and arm64
 - **Auto-update**: Daily rebuild if changes detected
 
 ## Usage
 
-### Option 1: Use the image directly
+### Option 1: Copy the devcontainer folder
 
-Copy the `.devcontainer/devcontainer.json` file to your project and update the `image` field with your GitHub username:
+Copy the desired template folder from `.devcontainer/` to your project:
+
+```bash
+# For base template
+cp -r .devcontainer/base /your-project/.devcontainer
+
+# For BMAD template
+cp -r .devcontainer/base-with-bmad /your-project/.devcontainer
+```
+
+### Option 2: Use the image directly
+
+Create a `.devcontainer/devcontainer.json` in your project:
 
 ```json
 {
-  "image": "ghcr.io/Pikatsuto/devcontainer-claude-code:latest"
+  "name": "Claude Code Dev Container",
+  "image": "ghcr.io/pikatsuto/devcontainer-claude-code:latest",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+  ],
+  "remoteUser": "vscode"
 }
 ```
 
-### Option 2: Extend the image
+### Option 3: Extend the image
 
 Create your own Dockerfile based on this image:
 
@@ -46,10 +71,15 @@ Authentication is shared from your host machine via the `~/.claude` mount.
 **Before using the container**, authenticate on your host machine:
 
 ```bash
+curl -fsSL https://claude.ai/install.sh | bash
 claude login
 ```
 
 The container will automatically reuse this authentication.
+
+### SSH Keys (for git push)
+
+Your SSH keys are mounted read-only from `~/.ssh` for GitHub/GitLab access.
 
 ### GitHub Package Permissions
 
@@ -59,25 +89,23 @@ To use the image, make sure the package is public or you are authenticated:
 echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 ```
 
-## Create Your Own Template
-
-1. Use this repository as a template (click "Use this template" button)
-2. Replace `Pikatsuto` with your username in these files:
-   - `.devcontainer/Dockerfile`: `org.opencontainers.image.source` label
-   - `.devcontainer/devcontainer.json`: `image` field
-3. Enable GitHub Actions
-4. Make the package public in Settings > Packages
-
 ## Structure
 
 ```
 .
 ├── .devcontainer/
-│   ├── Dockerfile          # Docker image: Debian 13 + Claude Code
-│   └── devcontainer.json   # VS Code Dev Container configuration
+│   ├── base/
+│   │   ├── Dockerfile
+│   │   ├── devcontainer.json
+│   │   └── devcontainer-template.json
+│   └── base-with-bmad/
+│       ├── Dockerfile
+│       ├── devcontainer.json
+│       └── devcontainer-template.json
 ├── .github/
 │   └── workflows/
-│       └── build-container.yml  # Automatic build every 24h
+│       └── build-container.yml
+├── devcontainer-collection.json
 └── README.md
 ```
 
@@ -86,12 +114,13 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 The GitHub Action checks every 24 hours for:
 
 - New Claude Code version
-- Changes in the Dockerfile
+- Changes in any Dockerfile
 
-Rebuild only occurs if changes are detected.
+Rebuild only occurs if changes are detected. All templates are built in parallel.
 
 ## Image Contents
 
+### Base
 
 | Package     | Description             |
 | ----------- | ----------------------- |
@@ -103,6 +132,15 @@ Rebuild only occurs if changes are detected.
 | tree        | Directory visualization |
 | procps      | Process tools (ps, top) |
 | lsof        | File/network debugging  |
+
+### Base with BMAD
+
+All base packages plus:
+
+| Package      | Description                        |
+| ------------ | ---------------------------------- |
+| Node.js 24   | JavaScript runtime                 |
+| BMAD-METHOD  | AI-driven agile development framework |
 
 ## License
 

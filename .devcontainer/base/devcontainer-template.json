@@ -1,0 +1,21 @@
+{
+  "id": "claude-code-base",
+  "version": "1.0.0",
+  "name": "Claude Code",
+  "description": "Dev Container with Claude Code pre-installed on Debian 13 (Trixie)",
+  "documentationURL": "https://github.com/Pikatsuto/DevContainer-Claude-Code-Compatible",
+  "licenseURL": "https://github.com/Pikatsuto/DevContainer-Claude-Code-Compatible/blob/main/LICENSE",
+  "publisher": "Pikatsuto",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai",
+    "debian"
+  ],
+  "options": {},
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ]
+}

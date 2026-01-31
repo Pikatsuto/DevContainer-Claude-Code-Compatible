@@ -1,0 +1,9 @@
+{
+  "sourceInformation": {
+    "source": "https://github.com/Pikatsuto/DevContainer-Claude-Code-Compatible"
+  },
+  "templates": [
+    ".devcontainer/base",
+    ".devcontainer/base-with-bmad"
+  ]
+}

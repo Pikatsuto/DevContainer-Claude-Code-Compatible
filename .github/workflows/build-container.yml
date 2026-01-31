@@ -1,4 +1,4 @@
-name: Build and Push Dev Container
+name: Build and Push Dev Containers
 
 on:
   push:
@@ -14,9 +14,26 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/devcontainer-claude-code
 
 jobs:
+  discover-containers:
+    runs-on: ubuntu-latest
+    outputs:
+      containers: ${{ steps.find.outputs.containers }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find all Dockerfiles
+        id: find
+        run: |
+          # Trouver tous les dossiers contenant un Dockerfile
+          CONTAINERS=$(find .devcontainer -mindepth 2 -name "Dockerfile" -printf '%h\n' | \
+            sed 's|.devcontainer/||' | \
+            jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "containers=$CONTAINERS" >> $GITHUB_OUTPUT
+          echo "Found containers: $CONTAINERS"
+
   check-updates:
     runs-on: ubuntu-latest
     outputs:
@@ -25,6 +42,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .claude-version-cache
+            .dockerfile-hash-cache
+          key: build-cache-${{ github.run_id }}
+          restore-keys: |
+            build-cache-
 
       - name: Get current versions
         id: versions
@@ -51,26 +78,13 @@ jobs:
             exit 0
           fi
 
-          # Pour le cron, vérifier si l'image existe et comparer les versions
-          echo "Checking existing image..."
+          # Pour le cron, vérifier les versions et les hashes
+          echo "Checking for changes..."
 
-          # Tenter de récupérer les labels de l'image existante
-          TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
-
-          MANIFEST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://ghcr.io/v2/${{ env.IMAGE_NAME }}/manifests/latest" 2>/dev/null || echo "")
-
-          if [[ -z "$MANIFEST" || "$MANIFEST" == *"error"* ]]; then
-            echo "No existing image found - will build"
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Récupérer la version de Claude Code dans l'image existante via le cache
-          CACHE_FILE=".claude-version-cache"
           CURRENT_CLAUDE_VERSION="${{ steps.versions.outputs.claude_version }}"
+          CACHE_FILE=".claude-version-cache"
 
-          # Utiliser le cache GitHub pour stocker la dernière version buildée
+          # Vérifier si la version de Claude Code a changé
           if [[ -f "$CACHE_FILE" ]]; then
             CACHED_VERSION=$(cat "$CACHE_FILE")
             if [[ "$CACHED_VERSION" != "$CURRENT_CLAUDE_VERSION" ]]; then
@@ -78,21 +92,25 @@ jobs:
               echo "should_build=true" >> $GITHUB_OUTPUT
               exit 0
             fi
+          else
+            echo "No version cache found - will build"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
-          # Vérifier le hash du Dockerfile
-          DOCKERFILE_HASH=$(sha256sum .devcontainer/Dockerfile | cut -d' ' -f1)
+          # Vérifier le hash de tous les Dockerfiles
+          DOCKERFILE_HASH=$(find .devcontainer -name "Dockerfile" -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
           CACHE_DOCKERFILE=".dockerfile-hash-cache"
 
           if [[ -f "$CACHE_DOCKERFILE" ]]; then
             CACHED_HASH=$(cat "$CACHE_DOCKERFILE")
             if [[ "$CACHED_HASH" != "$DOCKERFILE_HASH" ]]; then
-              echo "Dockerfile changed"
+              echo "Dockerfiles changed"
               echo "should_build=true" >> $GITHUB_OUTPUT
               exit 0
             fi
           else
-            echo "No cache found - will build"
+            echo "No Dockerfile cache found - will build"
             echo "should_build=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -100,28 +118,43 @@ jobs:
           echo "No changes detected - skipping build"
           echo "should_build=false" >> $GITHUB_OUTPUT
 
-      - name: Cache version info
-        if: steps.check.outputs.should_build == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            .claude-version-cache
-            .dockerfile-hash-cache
-          key: build-cache-${{ github.run_id }}
-          restore-keys: |
-            build-cache-
-
   build-and-push:
-    needs: check-updates
+    needs: [discover-containers, check-updates]
     if: needs.check-updates.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        container: ${{ fromJson(needs.discover-containers.outputs.containers) }}
+      fail-fast: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set image name
+        id: image
+        run: |
+          CONTAINER="${{ matrix.container }}"
+          OWNER="${{ github.repository_owner }}"
+
+          # Générer le nom de l'image basé sur le dossier
+          case "$CONTAINER" in
+            "base")
+              IMAGE_NAME="devcontainer-claude-code"
+              ;;
+            "base-with-bmad")
+              IMAGE_NAME="devcontainer-claude-code-bmad"
+              ;;
+            *)
+              IMAGE_NAME="devcontainer-claude-code-${CONTAINER}"
+              ;;
+          esac
+
+          echo "name=${OWNER}/${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "Image name: ${OWNER}/${IMAGE_NAME}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -140,7 +173,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYYMMDD'}}
@@ -149,21 +182,29 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .devcontainer
-          file: .devcontainer/Dockerfile
+          context: .devcontainer/${{ matrix.container }}
+          file: .devcontainer/${{ matrix.container }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.claude-code-version=${{ needs.check-updates.outputs.claude_version }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.container }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.container }}
+
+  update-cache:
+    needs: [check-updates, build-and-push]
+    if: needs.check-updates.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Update version cache
         run: |
           echo "${{ needs.check-updates.outputs.claude_version }}" > .claude-version-cache
-          sha256sum .devcontainer/Dockerfile | cut -d' ' -f1 > .dockerfile-hash-cache
+          find .devcontainer -name "Dockerfile" -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1 > .dockerfile-hash-cache
 
       - name: Save cache
         uses: actions/cache@v4
