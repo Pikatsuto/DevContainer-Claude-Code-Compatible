@@ -9,6 +9,10 @@ Dev Container templates with Claude Code pre-installed on Debian 13 (Trixie).
 | **base** | `ghcr.io/pikatsuto/devcontainer-claude-code:latest` | Claude Code only |
 | **base-with-bmad** | `ghcr.io/pikatsuto/devcontainer-claude-code-bmad:latest` | Claude Code + Node.js + BMAD-METHOD |
 
+Templates are also available at:
+- `ghcr.io/pikatsuto/devcontainer-claude-code-compatible/base`
+- `ghcr.io/pikatsuto/devcontainer-claude-code-compatible/base-with-bmad`
+
 ## Features
 
 - **Debian 13 (Trixie) base**: Lightweight and up-to-date image
@@ -25,7 +29,7 @@ Dev Container templates with Claude Code pre-installed on Debian 13 (Trixie).
 1. Open any folder in VS Code
 2. Press `F1` → "Dev Containers: Add Dev Container Configuration Files..."
 3. Select "Show All Definitions..."
-4. Search for `ghcr.io/pikatsuto/claude-code`
+4. Search for `ghcr.io/pikatsuto/devcontainer-claude-code-compatible`
 5. Choose your template (base or base-with-bmad)
 
 ### Option 2: Copy the devcontainer folder
