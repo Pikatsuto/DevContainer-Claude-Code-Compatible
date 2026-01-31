@@ -2,9 +2,10 @@
   "name": "Claude Code Dev Container",
   "image": "ghcr.io/pikatsuto/devcontainer-claude-code:latest",
 
-  // Montage du contexte Claude Code de l'hôte pour réutiliser l'authentification
+  // Montage des configurations de l'hôte
   "mounts": [
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
   ],
 
   // Configuration de l'utilisateur

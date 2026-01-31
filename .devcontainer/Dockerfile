@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     sudo \
+    openssh-client \
     # Outils d'analyse et debug
     ripgrep \
     fd-find \
