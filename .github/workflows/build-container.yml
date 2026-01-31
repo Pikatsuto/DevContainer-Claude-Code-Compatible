@@ -8,7 +8,7 @@ on:
       - '.devcontainer/**'
       - '.github/workflows/build-container.yml'
   schedule:
-    # Toutes les 24h à 2h du matin UTC
+    # Every 24h at 2am UTC
     - cron: '0 2 * * *'
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
       - name: Find all Dockerfiles
         id: find
         run: |
-          # Trouver tous les dossiers contenant un Dockerfile
+          # Find all directories containing a Dockerfile
           CONTAINERS=$(find .devcontainer -mindepth 2 -name "Dockerfile" -printf '%h\n' | \
             sed 's|.devcontainer/||' | \
             jq -R -s -c 'split("\n") | map(select(length > 0))')
@@ -56,7 +56,7 @@ jobs:
       - name: Get current versions
         id: versions
         run: |
-          # Récupérer la dernière version de Claude Code
+          # Get latest Claude Code version
           CLAUDE_VERSION=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "unknown")
           echo "claude_version=$CLAUDE_VERSION" >> $GITHUB_OUTPUT
           echo "Claude Code version: $CLAUDE_VERSION"
@@ -64,27 +64,27 @@ jobs:
       - name: Check if rebuild is needed
         id: check
         run: |
-          # Pour les push, toujours rebuild
+          # For push events, always rebuild
           if [[ "${{ github.event_name }}" == "push" ]]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "Push event - will rebuild"
             exit 0
           fi
 
-          # Pour les workflow_dispatch, toujours rebuild
+          # For workflow_dispatch, always rebuild
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "Manual trigger - will rebuild"
             exit 0
           fi
 
-          # Pour le cron, vérifier les versions et les hashes
+          # For cron, check versions and hashes
           echo "Checking for changes..."
 
           CURRENT_CLAUDE_VERSION="${{ steps.versions.outputs.claude_version }}"
           CACHE_FILE=".claude-version-cache"
 
-          # Vérifier si la version de Claude Code a changé
+          # Check if Claude Code version changed
           if [[ -f "$CACHE_FILE" ]]; then
             CACHED_VERSION=$(cat "$CACHE_FILE")
             if [[ "$CACHED_VERSION" != "$CURRENT_CLAUDE_VERSION" ]]; then
@@ -98,7 +98,7 @@ jobs:
             exit 0
           fi
 
-          # Vérifier le hash de tous les Dockerfiles
+          # Check hash of all Dockerfiles
           DOCKERFILE_HASH=$(find .devcontainer -name "Dockerfile" -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
           CACHE_DOCKERFILE=".dockerfile-hash-cache"
 
@@ -140,7 +140,7 @@ jobs:
           CONTAINER="${{ matrix.container }}"
           OWNER="${{ github.repository_owner }}"
 
-          # Générer le nom de l'image basé sur le dossier
+          # Generate image name based on folder
           case "$CONTAINER" in
             "base")
               IMAGE_NAME="devcontainer-claude-code"
