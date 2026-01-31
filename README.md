@@ -30,14 +30,14 @@ Dev Container templates with Claude Code pre-installed on Debian 13 (Trixie).
 
 ### Option 2: Copy the devcontainer folder
 
-Copy the desired template folder from `.devcontainer/` to your project:
+Copy the desired template's `.devcontainer` folder to your project:
 
 ```bash
 # For base template
-cp -r .devcontainer/base /your-project/.devcontainer
+cp -r .devcontainer/base/.devcontainer /your-project/.devcontainer
 
 # For BMAD template
-cp -r .devcontainer/base-with-bmad /your-project/.devcontainer
+cp -r .devcontainer/base-with-bmad/.devcontainer /your-project/.devcontainer
 ```
 
 ### Option 3: Use the image directly
@@ -103,12 +103,14 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 .
 ├── .devcontainer/
 │   ├── base/
-│   │   ├── Dockerfile
-│   │   ├── devcontainer.json
+│   │   ├── .devcontainer/
+│   │   │   ├── Dockerfile
+│   │   │   └── devcontainer.json
 │   │   └── devcontainer-template.json
 │   └── base-with-bmad/
-│       ├── Dockerfile
-│       ├── devcontainer.json
+│       ├── .devcontainer/
+│       │   ├── Dockerfile
+│       │   └── devcontainer.json
 │       └── devcontainer-template.json
 ├── .github/
 │   └── workflows/

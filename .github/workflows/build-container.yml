@@ -27,9 +27,9 @@ jobs:
       - name: Find all Dockerfiles
         id: find
         run: |
-          # Find all directories containing a Dockerfile
-          CONTAINERS=$(find .devcontainer -mindepth 2 -name "Dockerfile" -printf '%h\n' | \
-            sed 's|.devcontainer/||' | \
+          # Find all template directories containing a Dockerfile
+          CONTAINERS=$(find .devcontainer -mindepth 3 -name "Dockerfile" -printf '%h\n' | \
+            sed 's|.devcontainer/||' | sed 's|/.devcontainer||' | \
             jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "containers=$CONTAINERS" >> $GITHUB_OUTPUT
           echo "Found containers: $CONTAINERS"
@@ -182,8 +182,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .devcontainer/${{ matrix.container }}
-          file: .devcontainer/${{ matrix.container }}/Dockerfile
+          context: .devcontainer/${{ matrix.container }}/.devcontainer
+          file: .devcontainer/${{ matrix.container }}/.devcontainer/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
