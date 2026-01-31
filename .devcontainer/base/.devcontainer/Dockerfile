@@ -54,8 +54,10 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Install Claude Code
+# Install Claude Code (as user to install in correct home)
+USER $USERNAME
 RUN curl -fsSL https://claude.ai/install.sh | bash
+USER root
 
 # Prepare Claude Code directories
 RUN mkdir -p /home/$USERNAME/.claude && \
