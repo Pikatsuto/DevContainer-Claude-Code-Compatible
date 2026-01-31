@@ -85,7 +85,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 
 The GitHub Action checks every 24 hours for:
 
-- New Claude Code version on npm
+- New Claude Code version
 - Changes in the Dockerfile
 
 Rebuild only occurs if changes are detected.
@@ -95,7 +95,6 @@ Rebuild only occurs if changes are detected.
 
 | Package     | Description             |
 | ----------- | ----------------------- |
-| Node.js 24  | JavaScript runtime      |
 | Claude Code | Anthropic CLI           |
 | git         | Version control         |
 | ripgrep     | Fast search             |

@@ -10,7 +10,6 @@ LABEL org.opencontainers.image.licenses="MIT"
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
-ARG NODE_VERSION=24
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -32,29 +31,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tree \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
 # Création de l'utilisateur non-root
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Configuration npm global pour l'utilisateur
-ENV NPM_CONFIG_PREFIX=/home/$USERNAME/.npm-global
-ENV PATH=$NPM_CONFIG_PREFIX/bin:$PATH
-
 # Installation de Claude Code
-RUN npm install -g @anthropic-ai/claude-code && \
-    npm cache clean --force
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # Préparer les répertoires Claude Code
 RUN mkdir -p /home/$USERNAME/.claude && \
-    chown -R $USERNAME:$USERNAME /home/$USERNAME/.claude && \
-    chown -R $USERNAME:$USERNAME /home/$USERNAME/.npm-global
+    chown -R $USERNAME:$USERNAME /home/$USERNAME/.claude
 
 USER $USERNAME
 WORKDIR /workspaces
