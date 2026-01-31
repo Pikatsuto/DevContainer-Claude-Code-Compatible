@@ -40,6 +40,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish templates
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           OWNER="${{ github.repository_owner }}"
           OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
@@ -47,4 +49,5 @@ jobs:
           # Publish all templates from .devcontainer folder
           devcontainer templates publish .devcontainer \
             --registry "${{ env.REGISTRY }}" \
-            --namespace "$OWNER_LC"
+            --namespace "$OWNER_LC" \
+            --log-level trace
