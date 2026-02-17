@@ -7,9 +7,6 @@ on:
     paths:
       - '.devcontainer/**'
       - '.github/workflows/build-container.yml'
-  schedule:
-    # Every 24h at 2am UTC
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 env:
